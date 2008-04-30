@@ -1,30 +1,65 @@
 -- upgrade-3.3.1.0.0-3.3.1.1.0.sql
 
-alter table im_user_absences
-add absence_status_id integer
-constraint im_user_absences_status_fk
-references im_categories;
+SELECT acs_log__debug('/packages/intranet-timesheet2/sql/postgresql/upgrade/upgrade-3.3.1.0.0-3.3.1.1.0.sql','');
 
 
-alter table im_user_absences
-add absence_name varchar(1000);
 
-update im_user_absences set absence_name = substring(description for 990);
+
+create or replace function inline_1 ()
+returns integer as '
+declare
+        v_count                 integer;
+	v_menu_id		integer;
+begin
+	select	count(*) into v_count from user_tab_columns
+	where	lower(table_name) = ''im_user_absences'' and lower(column_name) = ''absence_status_id'';
+	if v_count > 0 then return 0; end if;
+
+	alter table im_user_absences
+	add absence_status_id integer
+	constraint im_user_absences_status_fk
+	references im_categories;
+
+	alter table im_user_absences
+	add absence_name varchar(1000);
+
+	update im_user_absences set absence_name = substring(description for 990);
+
+
+	return 0;
+end;' language 'plpgsql';
+select inline_1 ();
+drop function inline_1();
+
+
 
 -----------------------------------------------------------
 
-SELECT acs_object_type__create_type (
-	'im_user_absence',		-- object_type
-	'Absence',			-- pretty_name
-	'Absences',			-- pretty_plural
-	'acs_object',			-- supertype
-	'im_user_absences',		-- table_name
-	'absence_id',			-- id_column
-	'intranet-timesheet2',		-- package_name
-	'f',				-- abstract_p
-	null,				-- type_extension_table
-	'im_user_absence__name'		-- name_method
-);
+create or replace function inline_1 ()
+returns integer as '
+declare
+        v_count                 integer;
+begin
+	select	count(*) into v_count from acs_object_types where object_type = ''im_user_absence'';
+	if v_count > 0 then return 0; end if;
+
+	SELECT acs_object_type__create_type (
+		''im_user_absence'',		-- object_type
+		''Absence'',			-- pretty_name
+		''Absences'',			-- pretty_plural
+		''acs_object'',			-- supertype
+		''im_user_absences'',		-- table_name
+		''absence_id'',			-- id_column
+		''intranet-timesheet2'',	-- package_name
+		''f'',				-- abstract_p
+		null,				-- type_extension_table
+		''im_user_absence__name''	-- name_method
+	);
+
+	return 0;
+end;' language 'plpgsql';
+select inline_1 ();
+drop function inline_1();
 
 
 
@@ -143,14 +178,10 @@ end;' language 'plpgsql';
 -- 16100-16999	reserved
 
 
-insert into im_categories(category_id, category, category_type) 
-values (16000, 'Active', 'Intranet Absence Status');
-insert into im_categories(category_id, category, category_type) 
-values (16002, 'Deleted', 'Intranet Absence Status');
-insert into im_categories(category_id, category, category_type) 
-values (16004, 'Requested', 'Intranet Absence Status');
-insert into im_categories(category_id, category, category_type) 
-values (16006, 'Rejected', 'Intranet Absence Status');
+SELECT im_category_new (16000, 'Active', 'Intranet Absence Status');
+SELECT im_category_new (16002, 'Deleted', 'Intranet Absence Status');
+SELECT im_category_new (16004, 'Requested', 'Intranet Absence Status');
+SELECT im_category_new (16006, 'Rejected', 'Intranet Absence Status');
 
 
 
@@ -169,14 +200,4 @@ select	category_id as absence_type_id, category as absence_type
 from	im_categories
 where	category_type = 'Intranet Absence Type'
 	and (enabled_p is null or enabled_p = 't');
-
-
-
-
-
------------------------------------------------------------
--- Workflow Callbacks to reset an absence status etc.
---
-
-
 
