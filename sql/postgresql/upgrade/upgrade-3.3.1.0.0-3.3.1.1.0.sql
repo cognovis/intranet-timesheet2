@@ -15,16 +15,13 @@ begin
 	where	lower(table_name) = ''im_user_absences'' and lower(column_name) = ''absence_status_id'';
 	if v_count > 0 then return 0; end if;
 
-	alter table im_user_absences
+	alter table im_user_absences 
 	add absence_status_id integer
-	constraint im_user_absences_status_fk
-	references im_categories;
+	constraint im_user_absences_status_fk references im_categories;
 
-	alter table im_user_absences
-	add absence_name varchar(1000);
+	alter table im_user_absences add absence_name varchar(1000);
 
 	update im_user_absences set absence_name = substring(description for 990);
-
 
 	return 0;
 end;' language 'plpgsql';

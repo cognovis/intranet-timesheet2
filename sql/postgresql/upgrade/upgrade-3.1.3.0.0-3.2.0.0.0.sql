@@ -83,11 +83,86 @@ DROP FUNCTION inline_0();
 
 -- Recreate the indices. 
 -- Got lost when removing the timesheet-task field
---
--- alter table im_hours add primary key (user_id, project_id, day);
--- create index im_hours_project_id_idx on im_hours(project_id);
--- create index im_hours_user_id_idx on im_hours(user_id);
--- create index im_hours_day_idx on im_hours(day);
+
+
+
+create or replace function inline_0 ()
+returns integer as '
+declare
+	v_count		integer;
+begin
+	select	count(*) into v_count from pg_indexes
+	where	lower(indexname) = ''im_hours_pkey'';
+	if v_count > 0 then return 0; end if;
+
+	alter table im_hours add primary key (user_id, project_id, day);
+
+	return 0;
+end;' language 'plpgsql';
+select inline_0 ();
+drop function inline_0 ();
+
+
+create or replace function inline_0 ()
+returns integer as '
+declare
+	v_count		integer;
+begin
+	select	count(*) into v_count from pg_indexes
+	where	lower(indexname) = ''im_hours_project_id_idx'';
+	if v_count > 0 then return 0; end if;
+
+	create index im_hours_project_id_idx on im_hours(project_id);
+
+	return 0;
+end;' language 'plpgsql';
+select inline_0 ();
+drop function inline_0 ();
+
+
+create or replace function inline_0 ()
+returns integer as '
+declare
+	v_count		integer;
+begin
+	select	count(*) into v_count from pg_indexes
+	where	lower(indexname) = ''im_hours_user_id_idx'';
+	if v_count > 0 then return 0; end if;
+
+	create index im_hours_user_id_idx on im_hours(user_id);
+
+	return 0;
+end;' language 'plpgsql';
+select inline_0 ();
+drop function inline_0 ();
+
+
+create or replace function inline_0 ()
+returns integer as '
+declare
+	v_count		integer;
+begin
+	select	count(*) into v_count from pg_indexes
+	where	lower(indexname) = ''im_hours_day_idx'';
+	if v_count > 0 then return 0; end if;
+
+	create index im_hours_day_idx on im_hours(day);
+
+	return 0;
+end;' language 'plpgsql';
+select inline_0 ();
+drop function inline_0 ();
+
+
+
+
+
+
+
+
+
+
+
 
 
 create or replace function inline_0 ()
