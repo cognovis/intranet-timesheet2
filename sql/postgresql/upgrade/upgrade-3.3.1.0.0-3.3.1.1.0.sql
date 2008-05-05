@@ -40,7 +40,7 @@ begin
 	select	count(*) into v_count from acs_object_types where object_type = ''im_user_absence'';
 	if v_count > 0 then return 0; end if;
 
-	SELECT acs_object_type__create_type (
+	PERFORM acs_object_type__create_type (
 		''im_user_absence'',		-- object_type
 		''Absence'',			-- pretty_name
 		''Absences'',			-- pretty_plural
