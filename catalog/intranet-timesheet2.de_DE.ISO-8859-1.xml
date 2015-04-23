@@ -63,6 +63,7 @@
   <msg key="Currency">Währung</msg>
   <msg key="Customers">Kunde</msg>
   <msg key="D">D</msg>
+  <msg key="Daily">Täglich</msg>
   <msg key="Daily_project_notes">Tägliche Projektnotizen</msg>
   <msg key="Date">Datum</msg>
   <msg key="Date_for_user">%pretty_date% für %user_name_from_search%</msg>
@@ -81,7 +82,10 @@
   <msg key="December">Dezember</msg>
   <msg key="Delete">Löschen</msg>
   <msg key="Description">Beschreibung</msg>
+  <msg key="Detail_Level">Detaillevel</msg>
+  <msg key="Detailed">Detailliert</msg>
   <msg key="Deviation">Abweichung</msg>
+  <msg key="Dimension">Einheit</msg>
   <msg key="Display">Anzeige</msg>
   <msg key="Display_Users">Benutzer anzeigen</msg>
   <msg key="Duration_days">Dauer in Tagen</msg>
@@ -136,6 +140,7 @@
   <msg key="K">K</msg>
   <msg key="L">L</msg>
   <msg key="Last_3_Month">Letzte 3 Monate</msg>
+  <msg key="Last_3_Months">Letzte 3 Monate</msg>
   <msg key="Last_3_months">Letzte 3 Monate</msg>
   <msg key="Last_3_Weeks">Letzte 3 Wochen</msg>
   <msg key="Local">Lokal</msg>
@@ -244,6 +249,7 @@
   <msg key="Mine">Meine</msg>
   <msg key="Monday">Montag</msg>
   <msg key="Month">Monat</msg>
+  <msg key="Monthly">Monatlich</msg>
   <msg key="More_currencies">Weitere Währungen</msg>
   <msg key="N">N</msg>
   <msg key="Name">Name</msg>
@@ -258,6 +264,7 @@
   <msg key="New_Travel_Absence">Neue Abwesenheit (Reise)</msg>
   <msg key="New_Vacation_Absence">Neuer Erholungsurlaub</msg>
   <msg key="Next_3_Month">Nächste 3 Monate</msg>
+  <msg key="Next_3_Months">Nächste 3 Monate</msg>
   <msg key="Next_3_Weeks">Nächste 3 Wochen</msg>
   <msg key="Next_Month">Nächster Monat</msg>
   <msg key="No_Data_found">Keine Daten gefunden</msg>
@@ -280,6 +287,7 @@
   <msg key="October">Oktober</msg>
   <msg key="One_employee">Ein Mitarbeiter</msg>
   <msg key="One_project">Ein Projekt</msg>
+  <msg key="OnlyApprovedHours">Nur genehmigte Stunden</msg>
   <msg key="Other_Options">Andere Optionen</msg>
   <msg key="own_hours">eigene Stunden</msg>
   <msg key="P">P</msg>
@@ -321,10 +329,12 @@ name</msg>
   <msg key="September">September</msg>
   <msg key="Show_one">Anzeigen</msg>
   <msg key="Show_Users">Benutzer anzeigen</msg>
+  <msg key="Single">Einzeln</msg>
   <msg key="Start_Date">Startdatum</msg>
   <msg key="Starting">Start</msg>
   <msg key="Status">Status</msg>
   <msg key="submit">Bestätigen</msg>
+  <msg key="Subprojects">Unterprojekte</msg>
   <msg key="Summary">Zusammenfassung</msg>
   <msg key="Summary_by_date">Zusammenfassung nach Datum</msg>
   <msg key="Sunday">Sonntag</msg>
@@ -378,7 +388,9 @@ name</msg>
   <msg key="Week_total">Woche total</msg>
   <msg key="Week_total_1">Woche gesamt</msg>
   <msg key="Weekday">Wochentag</msg>
+  <msg key="Weekly">Wöchentlich</msg>
   <msg key="Weekly_hours">Wöchentliche Stunden</msg>
+  <msg key="WithAbsencesP">Zeige Abwesenheiten?</msg>
   <msg key="Work_done">Geleistete Arbeit - Kommentierung</msg>
   <msg key="Worked_Day">Arbeitstag</msg>
   <msg key="X">X</msg>

@@ -5,6 +5,7 @@
 <td class="rowtitle">#intranet-timesheet2.Attibute_Type#</td>
 <td class="rowtitle">#intranet-timesheet2.Remaining_Days#</td>
 <td class="rowtitle">#intranet-timesheet2.Requested_Days#</td>
+<td class="rowtitle">#intranet-timesheet2.Total_Planned_Days#</td>
 </tr>
 @absence_type_html;noquote@
 </tbody>

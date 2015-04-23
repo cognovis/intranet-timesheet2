@@ -281,6 +281,7 @@ if {"" != $dynfield_extra_where} {
 # Fill Has values for each employee that is visible
 set active_category_ids [template::util::tcl_to_sql_list [im_sub_categories [im_user_absence_status_active]]]
 set requested_category_ids [template::util::tcl_to_sql_list [im_sub_categories [im_user_absence_status_requested]]]
+set planned_category_ids [template::util::tcl_to_sql_list [im_sub_categories [im_user_absence_status_planned]]]
 
 set sql "select *, 
      entitlement_days_total - total_absence_days - requested_absence_days_this_year as remaining_vacation_days 
@@ -313,6 +314,13 @@ select employee_id,im_name_from_user_id(employee_id,:name_order) as owner_name,i
       and absence_type_id = :absence_type_id
       and employee_id = owner_id
     ) as requested_absence_days_this_year,
+    ( select coalesce(sum(duration_days),0) from im_user_absences
+      where start_date::date >= to_date(:soy,'YYYY-MM-DD')
+      and start_date::date <= to_date(:eoy,'YYYY-MM-DD')
+      and absence_status_id in ($planned_category_ids)
+      and absence_type_id = :absence_type_id
+      and employee_id = owner_id
+    ) as planned_absence_days_this_year,
     (select coalesce(sum(entitlement_days),0) from im_user_leave_entitlements 
      where owner_id = employee_id 
      and leave_entitlement_type_id = :absence_type_id

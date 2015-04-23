@@ -63,15 +63,22 @@ set exclude_category_ids [db_list categories "
 "]
 
 set absence_type_html ""
-foreach category_id $vacation_category_ids {
+foreach absence_type_id $vacation_category_ids {
     
     set remaining_days \
         [im_leave_entitlement_remaining_days_helper \
             -user_id $user_id \
-            -absence_type_id $category_id \
+            -absence_type_id $absence_type_id \
             -requested_daysVar "requested_days"]
 
-    set absence_type [im_name_from_id $category_id]
+    set planned_category_ids [template::util::tcl_to_sql_list [im_sub_categories [im_user_absence_status_planned]]]
+
+    set planned_days [db_string planned "select coalesce(sum(duration_days),0) from im_user_absences
+      where absence_status_id in ($planned_category_ids)
+      and absence_type_id = :absence_type_id
+      and owner_id = :user_id" -default 0]
+    
+    set absence_type [im_name_from_id $absence_type_id]
     
     if {$remaining_days != 0 || $requested_days !=0} {
         append absence_type_html "    
@@ -79,6 +86,7 @@ foreach category_id $vacation_category_ids {
           <td align='left' valign='top' class='attribute' width='20%'>$absence_type</td>
           <td align='left' valign='top' class='value'>$remaining_days</td>
           <td align='left' valign='top' class='value'>$requested_days</td>
+          <td align='left' valign='top' class='value'>$planned_days</td>
         </tr>"
     }
 }

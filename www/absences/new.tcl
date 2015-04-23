@@ -211,7 +211,7 @@ if {$button_pressed =="delete"} {
 
         # Update the vacation status to cancelled
         db_dml cancel_absence "update im_user_absences set absence_status_id = [im_user_absence_status_deleted] where absence_id = :absence_id"
-        im_audit -object_type im_user_absence -action after_delete -object_id $absence_id -status_id [im_user_absence_status_deleted]
+        im_audit -object_type im_user_absence -action after_nuke -object_id $absence_id -status_id [im_user_absence_status_deleted]
 
     } else {
         db_transaction {
@@ -227,7 +227,7 @@ if {$button_pressed =="delete"} {
             db_dml del_tokens "delete from wf_tokens where case_id in (select case_id from wf_cases where object_id = :absence_id)"
             db_dml del_case "delete from wf_cases where object_id = :absence_id"
             db_string absence_delete "select im_user_absence__delete(:absence_id)"
-            im_audit -object_type im_user_absence -action after_delete -object_id $absence_id
+            im_audit -object_type im_user_absence -action after_nuke -object_id $absence_id
 	    
         } on_error {
             ad_return_error "Error deleting absence" "<br>Error:<br>$errmsg<br><br>"
@@ -321,13 +321,15 @@ ad_form \
 # ad_return_complaint 1 $write
 
 
-if {(!$absence_under_wf_control_p && !$wf_exists_p) || [im_permission $current_user_id edit_absence_status]} {
-    set form_list {{absence_status_id:text(im_category_tree) {label "[lang::message::lookup {} intranet-timesheet2.Status Status]"} {custom {category_type "Intranet Absence Status"}}}}
+if {(!$absence_under_wf_control_p) || [im_permission $current_user_id edit_absence_status]} {
+    ad_form -extend -name $form_id -form {
+        {absence_status_id:text(select) {label "[lang::message::lookup {} intranet-timesheet2.Status Status]"} {options {{[im_category_from_id [im_user_absence_status_planned]] [im_user_absence_status_planned]} {[im_category_from_id [im_user_absence_status_requested]] [im_user_absence_status_requested]}}}}
+    }        
 } else {
-#   set form_list {{absence_status_id:text(im_category_tree) {mode display} {label "[lang::message::lookup {} intranet-timesheet2.Status Status]"} {custom {category_type "Intranet Absence Status"}}}}
-    set form_list {{absence_status_id:text(hidden)}}
+    ad_form -extend -name $form_id -form {
+        {absence_status_id:text(im_category_tree) {mode display} {label "[lang::message::lookup {} intranet-timesheet2.Status Status]"} {custom {category_type "Intranet Absence Status"}}}
+    }
 }
-ad_form -extend -name $form_id -form $form_list
 
 ad_form -extend -name $form_id -form {
     {start_date:date(date) {label "[_ intranet-timesheet2.Start_Date]"} {after_html {<input type="button" style="height:23px; width:23px; background: url('/resources/acs-templating/calendar.gif');" onclick ="return showCalendarWithDateWidget('start_date', 'y-m-d');" >}}}
@@ -487,7 +489,10 @@ ad_form -extend -name $form_id -on_request {
 		where object_id = :absence_id
     "
 
-    if {$wf_exists_p} {
+    # Skip the workflow creation if it is a planned absence
+    # Probably other customers want to have a workflow for planned absences, though that 
+    # Defies the purpose of undisturbed planning by the user
+    if {$wf_exists_p && $absence_status_id != [im_user_absence_status_planned]} {
 	    set context_key ""
 	    set case_id [wf_case_new \
 			 $wf_key \
@@ -503,27 +508,27 @@ ad_form -extend -name $form_id -on_request {
     ns_log Notice "Callback: Calling callback 'absence_on_change' "
     
     callback absence_on_change \
-	-absence_id $absence_id \
-	-absence_type_id $absence_type_id \
-	-user_id $absence_owner_id \
-	-start_date $start_date_sql \
-	-end_date $end_date_sql \
-	-duration_days $duration_days \
-	-transaction_type "add"
+        	-absence_id $absence_id \
+        	-absence_type_id $absence_type_id \
+        	-user_id $absence_owner_id \
+        	-start_date $start_date_sql \
+        	-end_date $end_date_sql \
+        	-duration_days $duration_days \
+        	-transaction_type "add"
     
     # Audit the action
     im_audit -object_type im_user_absence -action after_create -object_id $absence_id -status_id $absence_status_id -type_id $absence_type_id
 
 } -edit_data {
 
-    # Check if the user still has the permission to edit this absence
-    if {![im_absence_new_page_wf_perm_edit_button -absence_id $absence_id]} {
-        ad_return_error "Not allowed to edit" "You are not allowed to edit this absence anymore. Please go <a href='$return_url'>back</a>."
-        ad_script_abort
-    }
-
     
     if {$absence_under_wf_control_p} {
+        # Check if the user still has the permission to edit this absence
+        if {![im_absence_new_page_wf_perm_edit_button -absence_id $absence_id]} {
+            ad_return_error "Not allowed to edit" "You are not allowed to edit this absence anymore. Please go <a href='$return_url'>back</a>."
+            ad_script_abort
+        }
+
         set case_id [db_string get_case "select min(case_id) from wf_cases where object_id = :absence_id"]
 
 
@@ -545,13 +550,16 @@ ad_form -extend -name $form_id -on_request {
 
     } else {
         # Find out if it should be under workflow control and then add the workflow
-        if {"" != $wf_key} {
-    	    set case_id [wf_case_new \
-    			 $wf_key \
-    			 "" \
-    			 $absence_id
-    		]
-            wf_case_cancel -msg "Cancelling workflow for old created absence" $case_id
+        if {$wf_exists_p && $absence_status_id == [im_user_absence_status_requested]} {
+            set context_key ""
+            set case_id [wf_case_new \
+                 $wf_key \
+                 $context_key \
+                 $absence_id
+            ]
+    
+            # Determine the first task in the case to be executed and start+finisch the task.
+            im_workflow_skip_first_transition -case_id $case_id
         }
     }
 
