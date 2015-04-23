@@ -550,13 +550,16 @@ ad_form -extend -name $form_id -on_request {
 
     } else {
         # Find out if it should be under workflow control and then add the workflow
-        if {"" != $wf_key &&  $absence_status_id != [im_user_absence_status_planned]} {
-        	    set case_id [wf_case_new \
-        			 $wf_key \
-    		      	 "" \
-    		  	   $absence_id
-    		   ]
-           # wf_case_cancel -msg "Cancelling workflow for old created absence" $case_id
+        if {$wf_exists_p && $absence_status_id == [im_user_absence_status_requested]} {
+            set context_key ""
+            set case_id [wf_case_new \
+                 $wf_key \
+                 $context_key \
+                 $absence_id
+            ]
+    
+            # Determine the first task in the case to be executed and start+finisch the task.
+            im_workflow_skip_first_transition -case_id $case_id
         }
     }
 
