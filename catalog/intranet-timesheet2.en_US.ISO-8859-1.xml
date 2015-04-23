@@ -150,6 +150,7 @@
   <msg key="K">K</msg>
   <msg key="L">L</msg>
   <msg key="Last_3_Month">Last 3 month</msg>
+  <msg key="Last_3_Months">Last 3 Months</msg>
   <msg key="Last_3_months">Last 3 months</msg>
   <msg key="Last_3_Weeks">Last 3 weeks</msg>
   <msg key="Leave_entitlements">Leave Entitlements</msg>
@@ -291,6 +292,7 @@ of those units were billed hourly, for a total amount of</msg>
   <msg key="New_Travel_Absence">New Travel Absence</msg>
   <msg key="New_Vacation_Absence">New Vacation Absence</msg>
   <msg key="Next_3_Month">Next 3 month</msg>
+  <msg key="Next_3_Months">Next 3 Months</msg>
   <msg key="Next_3_Weeks">Next 3 weeks</msg>
   <msg key="Next_Month">Next Month</msg>
   <msg key="No_Data_found">No Data found</msg>
@@ -387,6 +389,7 @@ of those units were billed hourly, for a total amount of</msg>
   <msg key="Total_1">Total:</msg>
   <msg key="Total_Amount">Total Amount</msg>
   <msg key="Total_Euros">Total Euros:</msg>
+  <msg key="Total_Planned_Days">Total Planned Days</msg>
   <msg key="TotalAbsences">Total Absences</msg>
   <msg key="Training">Training</msg>
   <msg key="Tuesday">Tuesday</msg>
@@ -425,6 +428,7 @@ of those units were billed hourly, for a total amount of</msg>
   <msg key="Weekday">Weekday</msg>
   <msg key="Weekly">Weekly</msg>
   <msg key="Weekly_hours">Weekly hours</msg>
+  <msg key="WithAbsencesP">Display Absences?</msg>
   <msg key="Work_done">Work done</msg>
   <msg key="Workdays">Workdays</msg>
   <msg key="Worked_Day">Worked Day</msg>
