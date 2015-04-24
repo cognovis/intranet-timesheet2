@@ -420,40 +420,51 @@ append parent_project_sql "
 		and $h_day_in_dayweek
 		and h.project_id = p.project_id
 		and tree_ancestor_key(p.tree_sortkey, 1) = main_p.tree_sortkey
+	UNION
+    -- Always show the main-projects of projects where they are a member of
+        select	main_p.project_id
+        from	    acs_rels r,
+                im_projects p,
+                im_projects main_p
+        where	r.object_id_two = :user_id_from_search
+            and r.object_id_one = p.project_id
+            and p.tree_sortkey between
+                main_p.tree_sortkey and
+                tree_right(main_p.tree_sortkey)
 "
 
 
 # Determine how to show the tasks of projects.
 switch $task_visibility_scope {
     "main_project" {
-	# main_project: The main project determines the subproject/task visibility space
-	set children_sql "
-				select	sub.project_id
-				from	acs_rels r,
-					im_projects main,
-					im_projects sub
-				where	r.object_id_two = :user_id_from_search
-					and r.object_id_one = main.project_id
-					and main.tree_sortkey = tree_ancestor_key(sub.tree_sortkey, 1)
-					and (main.project_status_id not in ($closed_stati_list) or main.project_id in ($recent_projects_list))
-					and (sub.project_status_id not in ($closed_stati_list) or sub.project_id in ($recent_projects_list))
-	"
+        	# main_project: The main project determines the subproject/task visibility space
+        	set children_sql "
+        				select	sub.project_id
+        				from	acs_rels r,
+        					im_projects main,
+        					im_projects sub
+        				where	r.object_id_two = :user_id_from_search
+        					and r.object_id_one = main.project_id
+        					and main.tree_sortkey = tree_ancestor_key(sub.tree_sortkey, 1)
+        					and (main.project_status_id not in ($closed_stati_list) or main.project_id in ($recent_projects_list))
+        					and (sub.project_status_id not in ($closed_stati_list) or sub.project_id in ($recent_projects_list))
+        	"
     }
     "specified" {
-	# specified: We've got an explicit "project_id"
-	# Show everything that's below, even if the user isn't a member.
-	set children_sql "
-				select	sub.project_id
-				from	im_projects main,
-					im_projects sub
-				where	(	main.project_id = :main_project_id 
-						OR main.project_id in ([join $main_project_id_list ","])
-					)
-					and (main.project_status_id not in ($closed_stati_list) or main.project_id in ($recent_projects_list))
-					and sub.tree_sortkey between
-						main.tree_sortkey and
-						tree_right(main.tree_sortkey)
-	"
+        	# specified: We've got an explicit "project_id"
+        	# Show everything that's below, even if the user isn't a member.
+        	set children_sql "
+        				select	sub.project_id
+        				from	im_projects main,
+        					im_projects sub
+        				where	(	main.project_id = :main_project_id 
+        						OR main.project_id in ([join $main_project_id_list ","])
+        					)
+        					and (main.project_status_id not in ($closed_stati_list) or main.project_id in ($recent_projects_list))
+        					and sub.tree_sortkey between
+        						main.tree_sortkey and
+        						tree_right(main.tree_sortkey)
+        	"
         if { "restrictive" == $permissive_logging && $one_project_only_p } {
             set children_sql "$children_sql
                                 and sub.project_id in (
@@ -465,34 +476,34 @@ switch $task_visibility_scope {
         }
     }
     "sub_project" {
-	# sub_project: Each (sub-) project determines the visibility of its tasks.
-	# So we are looking for the "lowest" in the project hierarchy subproject
-	# that's just above its tasks and controls the visibility of the tasks.
-	# There are four conditions to determine the list of the "controlling" projects efficiently:
-	#	- the controlling_project is a project
-	#	- the task directly below the ctrl_project is a task.
-	#	- the current user is member of the controlling project
-	#	- the controlling_project is below the visible main projects 
-	#	  (optional, may speedup query, but does not in general when all projects are selected)
-	#
-	# This query is slightly too permissive, because a single task associated with a main project
-	# would make the main project the "controlling" project and show _all_ tasks in all subprojects,
-	# even if the user doesn't have permissions for those. However, this can be fixed on the TCL level.
-	set ctrl_projects_sql "
-		select	distinct ctrl.project_id
-		from	im_projects ctrl,
-			im_projects task,
-			acs_rels r
-		where	
-			task.parent_id = ctrl.project_id
-			and ctrl.project_type_id not in ( [im_project_type_task], [im_project_type_ticket])
-			and task.project_type_id in ( [im_project_type_task], [im_project_type_ticket] )
-			and (ctrl.project_status_id not in ($closed_stati_list) or ctrl.project_id in ($recent_projects_list))
-			and (task.project_status_id not in ($closed_stati_list) or task.project_id in ($recent_projects_list))
-			and r.object_id_one = ctrl.project_id
-			and r.object_id_two = :user_id_from_search
-	"
-
+        	# sub_project: Each (sub-) project determines the visibility of its tasks.
+        	# So we are looking for the "lowest" in the project hierarchy subproject
+        	# that's just above its tasks and controls the visibility of the tasks.
+        	# There are four conditions to determine the list of the "controlling" projects efficiently:
+        	#	- the controlling_project is a project
+        	#	- the task directly below the ctrl_project is a task.
+        	#	- the current user is member of the controlling project
+        	#	- the controlling_project is below the visible main projects 
+        	#	  (optional, may speedup query, but does not in general when all projects are selected)
+        	#
+        	# This query is slightly too permissive, because a single task associated with a main project
+        	# would make the main project the "controlling" project and show _all_ tasks in all subprojects,
+        	# even if the user doesn't have permissions for those. However, this can be fixed on the TCL level.
+        	set ctrl_projects_sql "
+        		select	distinct ctrl.project_id
+        		from	im_projects ctrl,
+        			im_projects task,
+        			acs_rels r
+        		where	
+        			task.parent_id = ctrl.project_id
+        			and ctrl.project_type_id not in ( [im_project_type_task], [im_project_type_ticket])
+        			and task.project_type_id in ( [im_project_type_task], [im_project_type_ticket] )
+        			and (ctrl.project_status_id not in ($closed_stati_list) or ctrl.project_id in ($recent_projects_list))
+        			and (task.project_status_id not in ($closed_stati_list) or task.project_id in ($recent_projects_list))
+        			and r.object_id_one = ctrl.project_id
+        			and r.object_id_two = :user_id_from_search
+        	"
+        
         if { "restrictive" == $permissive_logging } {
             set restrictive_sql "and sub.project_id in (
                                         select  r.object_id_one
@@ -501,28 +512,28 @@ switch $task_visibility_scope {
                                 )
             "
         } else {
-	    set restrictive_sql ""
-	}
+        	    set restrictive_sql ""
+        	}
 
-	set children_sql "
-				-- Select any subprojects of control projects
-				select	sub.project_id
-				from	im_projects main,
-					($ctrl_projects_sql) ctrl,
-					im_projects sub
-				where	ctrl.project_id = main.project_id
-					and (main.project_status_id not in ($closed_stati_list) or main.project_id in ($recent_projects_list))
-					and (sub.project_status_id not in ($closed_stati_list) or sub.project_id in ($recent_projects_list))
-					and sub.tree_sortkey between
-						main.tree_sortkey and
-						tree_right(main.tree_sortkey)
-                                        $restrictive_sql
-			UNION
-				-- Select any project or task with explicit membership
-				select  r.object_id_one
-				from    acs_rels r
-				where   r.object_id_two = :user_id_from_search
-	"
+        	set children_sql "
+        				-- Select any subprojects of control projects
+        				select	sub.project_id
+        				from	im_projects main,
+        					($ctrl_projects_sql) ctrl,
+        					im_projects sub
+        				where	ctrl.project_id = main.project_id
+        					and (main.project_status_id not in ($closed_stati_list) or main.project_id in ($recent_projects_list))
+        					and (sub.project_status_id not in ($closed_stati_list) or sub.project_id in ($recent_projects_list))
+        					and sub.tree_sortkey between
+        						main.tree_sortkey and
+        						tree_right(main.tree_sortkey)
+                                                $restrictive_sql
+        			UNION
+        				-- Select any project or task with explicit membership
+        				select  r.object_id_one
+        				from    acs_rels r
+        				where   r.object_id_two = :user_id_from_search
+        	"
     }
     "task" {
 	# task: Each task has its own space - the user needs to be member of all tasks to log hours.
@@ -541,15 +552,15 @@ set child_project_sql "
 			    UNION
 				-- Always show projects and tasks where user has logged hours
 				select	project_id
-				from	im_hours h
+				from	    im_hours h
 				where	h.user_id = :user_id_from_search
 					and $h_day_in_dayweek
 			    UNION
 				-- Project with hours on it plus any of its superiors
 				select	main_p.project_id
-				from	im_hours h,
-					im_projects p,
-					im_projects main_p
+				from	    im_hours h,
+					    im_projects p,
+					    im_projects main_p
 				where	h.user_id = :user_id_from_search
 					and $h_day_in_dayweek
 					and h.project_id = p.project_id
@@ -731,7 +742,9 @@ set open_projects_sql "
 		and tree_ancestor_key(p.tree_sortkey, 1) = main_p.tree_sortkey
 "
 array set member_projects_hash {}
+set member_project_ids [list]
 db_foreach open_projects $open_projects_sql {
+    lappend member_project_ids $open_project_id
     set member_projects_hash($open_project_id) 1
 }
 
@@ -834,69 +847,71 @@ template::multirow foreach hours_multirow {
     #-- -----------------------------------------------------------------------------------------------
 
     if { "" != $search_task } {
-	set search_task [string trim $search_task]
-	if { !$showing_child_elements_p || $ctr==0 } {
-	    if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
-		set filter_surpress_output_p 1
-	    } else {
-		# Set mode
-		set showing_child_elements_p 1
-		# Save vars
-		set last_level_shown $subproject_level
-		set level_entered_in_showing_child_elements $subproject_level
-		set top_project_id_saved $top_project_id
-	    }
-	} else {
-	    # In mode "Show child elements"
-	    if { $top_project_id_saved != $top_project_id } {
-		# New top parent project
-		# Reset
-		set showing_child_elements_p 0
-		# Save vars
-		set top_project_id_saved $top_project_id
-		
-		if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
-		    set filter_surpress_output_p 1
-		} else {
-		    # Set mode & last_level_shown
-		    set showing_child_elements_p 1
-		    set level_entered_in_showing_child_elements $subproject_level
-		    set last_level_shown $subproject_level
-		}
-	    } else {
-		if { $subproject_level == $last_level_shown } {
-		    if { $level_entered_in_showing_child_elements >= $subproject_level} {
-			# reset last_level_shown
-			# Check for searchstring
-			if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
-			    set filter_surpress_output_p 1
-			} else {
-			    set last_level_shown $subproject_level
-			}			
-		    } else {
-			set last_level_shown $subproject_level
-		    }
-		} elseif { $subproject_level > $last_level_shown } {
-		    # show in all cases
-		    set last_level_shown $subproject_level
-		} else {
-		    if { $level_entered_in_showing_child_elements >= $subproject_level} {
-			# ns_log NOTICE "/intranet-timesheet2/www/hours/new:: Check for searchstring"
-			if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
-			    set showing_child_elements_p 0
-			    set filter_surpress_output_p 1
-			} else {
-			    set last_level_shown $subproject_level
-			}
-		    } else {
-			set last_level_shown $subproject_level
-		    }
-		}
-	    }
-	}
-	set top_project_id_saved $top_project_id
+        	set search_task [string trim $search_task]
+        	if { !$showing_child_elements_p || $ctr==0 } {
+	       if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
+    	           set filter_surpress_output_p 1
+	       } else {
+            	   # Set mode
+            	   set showing_child_elements_p 1
+            	   # Save vars
+            	   set last_level_shown $subproject_level
+            	   set level_entered_in_showing_child_elements $subproject_level
+            	   set top_project_id_saved $top_project_id
+        	   }
+        	} else {
+            	# In mode "Show child elements"
+        	    if { $top_project_id_saved != $top_project_id } {
+            	    # New top parent project
+            	    # Reset
+        	        set showing_child_elements_p 0
+        		    # Save vars
+        	        set top_project_id_saved $top_project_id
+        		
+            		if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
+            		    set filter_surpress_output_p 1
+            		} else {
+        		        # Set mode & last_level_shown
+        		        set showing_child_elements_p 1
+        		        set level_entered_in_showing_child_elements $subproject_level
+        		        set last_level_shown $subproject_level
+        		    }
+        	    } else {
+            		if { $subproject_level == $last_level_shown } {
+            		    if { $level_entered_in_showing_child_elements >= $subproject_level} {
+            			# reset last_level_shown
+            			# Check for searchstring
+            			if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
+            			    set filter_surpress_output_p 1
+            			} else {
+            			    set last_level_shown $subproject_level
+            			}			
+            		    } else {
+            			set last_level_shown $subproject_level
+            		    }
+            		} elseif { $subproject_level > $last_level_shown } {
+            		    # show in all cases
+            		    set last_level_shown $subproject_level
+            		} else {
+            		    if { $level_entered_in_showing_child_elements >= $subproject_level} {
+            			# ns_log NOTICE "/intranet-timesheet2/www/hours/new:: Check for searchstring"
+            			if { [string first [string tolower $search_task] [string tolower $project_name]] == -1 } {
+            			    set showing_child_elements_p 0
+            			    set filter_surpress_output_p 1
+            			} else {
+            			    set last_level_shown $subproject_level
+            			}
+            		    } else {
+            			set last_level_shown $subproject_level
+            		    }
+            		}
+        	    }
+        	}
+	    set top_project_id_saved $top_project_id
     }
     
+    ns_log Notice "LISTE: $project_name: p=$project_id, depth=$subproject_level, closed_level=$closed_level, status=$project_status"
+
     # --------------------------------------------- 
     # Deal with the open and closed subprojects
     # A closed project will prevent all sub-projects from being displayed. 
